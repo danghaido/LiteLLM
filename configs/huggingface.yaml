@@ -1,0 +1,16 @@
+env_key: HUGGINGFACE_API_KEY
+api_key: API_key
+provider: together
+api_base: https://api-inference.huggingface.co
+model: huggingface/together/Qwen/Qwen2.5-7B-Instruct
+project: hugging-face
+default_params:
+  max_new_tokens: 128
+  temperature: 0.7
+extra_env:
+  HF_HUB_ENABLE_HF_TRANSFER: "1"
+
+eval_model:
+  model: huggingface/together/Qwen/Qwen2.5-7B-Instruct
+  api_key: API_key
+  temperature: 0.0
