@@ -5,7 +5,6 @@ build/
 dist/
 wheels/
 *.egg-info
-configs/huggingface.yaml
 
 # Virtual environments
 .venv

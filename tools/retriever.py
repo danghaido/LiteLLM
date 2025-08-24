@@ -16,7 +16,7 @@ from opentelemetry.trace import Status, StatusCode
 def _bootstrap(
     path: str = "DB_TEST",
     collection_name: str = "journal_db",
-    embedding_model: str = "Qwen/Qwen3-Embedding-0.6B",
+    embedding_model: str = "BAAI/bge-large-en-v1.5",
     reranker_model: str = "BAAI/bge-reranker-v2-m3",
 ):
     # embeddings

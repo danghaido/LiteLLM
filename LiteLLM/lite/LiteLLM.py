@@ -12,12 +12,13 @@ from LiteLLM.Response import ResponseInput, ResponseOutput
 
 class LiteLLMClient:
     def __init__(
-        self, model_name: str = None, provider: str = None, api_key: str = None
+        self, model_name: str = None, provider: str = None, api_key: str = None, temperature: float = 0.7
     ):
 
         self.provider = provider or CONFIG.provider
         self.model_name = model_name or CONFIG.model
         self.api_key = api_key or CONFIG.api_key
+        self.temperature = temperature or CONFIG.temperature
 
         os.environ[CONFIG.env_key] = self.api_key
 
@@ -33,7 +34,7 @@ class LiteLLMClient:
                 response = completion(
                     model=self.model_name,
                     messages=message,
-                    temperature=CONFIG.default_params.temperature,
+                    temperature=self.temperature,
                     **kwargs,
                 )
                 out = ResponseOutput(response).transform()
@@ -69,7 +70,7 @@ class LiteLLMClient:
                         resp = completion(
                             model=self.model_name,
                             messages=m,
-                            temperature=CONFIG.default_params.temperature,
+                            temperature=self.temperature,
                             **kwargs,
                         )
                         out_obj = ResponseOutput(resp)
