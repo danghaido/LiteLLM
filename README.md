@@ -12,12 +12,12 @@ Nho phai co Make calls to Inference Providers
 
 # Run scripts
 B1: Cap quyen cho scripts
-chmod +x run_scripts/query.sh run_scripts/batch_query.sh
+chmod +x run_scripts/query.sh run_scripts/auto_query.sh
 
 B2: Chay scripts
 ./run_scripts/query.sh
 
-./run_scripts/batch_query.sh
+./run_scripts/auto_query.sh
 
 # Run Scripts tren windows
 

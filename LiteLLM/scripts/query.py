@@ -28,7 +28,7 @@ if __name__ == "__main__":
                     response = client.complete([msg])
 
                     out = response.transform()
-                    print(out)
+                    print(f"Answer from LLM: {out}")
                     print(response.usage())
 
                     span.set_attribute("output.value", out[:400])

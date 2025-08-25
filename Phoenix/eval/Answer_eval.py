@@ -27,7 +27,7 @@ class AnswerEval:
         {output}
 
         First, briefly explain your reasoning (1–3 sentences).
-        Then, on the **last line**, output ONLY ONE of the following labels (all lowercase):
+        Then, on the **last line**, output must ONLY BE ONE of the following labels (all lowercase):
         correct
         incorrect
     """
@@ -70,7 +70,7 @@ class AnswerEval:
     def _setup_environment(self, phoenix_endpoint: str) -> None:
         """Setup environment variables and debugging."""
         os.environ["PHOENIX_COLLECTOR_ENDPOINT"] = phoenix_endpoint
-        os.environ["HUGGINGFACE_API_KEY"] = CONFIG.api_key
+        os.environ[CONFIG.eval_model.env] = CONFIG.eval_model.api_key
         litellm._turn_on_debug()
 
 
