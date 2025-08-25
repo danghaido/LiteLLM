@@ -62,7 +62,7 @@ class RAGEvaluator:
     def _setup_environment(self, phoenix_endpoint: str) -> None:
         """Setup environment variables and debugging."""
         os.environ["PHOENIX_COLLECTOR_ENDPOINT"] = phoenix_endpoint
-        os.environ["HUGGINGFACE_API_KEY"] = CONFIG.api_key
+        os.environ[CONFIG.eval_model.env] = CONFIG.eval_model.api_key
         litellm._turn_on_debug()
 
     @staticmethod
