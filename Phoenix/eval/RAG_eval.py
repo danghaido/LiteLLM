@@ -6,6 +6,7 @@ from typing import Optional, List, Dict, Any
 import litellm
 import phoenix as px
 import pandas as pd
+from loguru import logger
 
 from phoenix.evals import llm_classify, LiteLLMModel, RelevanceEvaluator, run_evals
 from phoenix.trace.dsl import SpanQuery
@@ -38,11 +39,11 @@ class RAGEvaluator:
             phoenix_endpoint: Phoenix collector endpoint
             concurrency: Number of concurrent evaluation requests
         """
-        self.project_name = project_name
-        self.model_name = model_name
-        self.temperature = temperature
-        self.concurrency = concurrency
-        
+        self.project_name = CONFIG.project or project_name
+        self.model_name = CONFIG.eval_model.model or model_name
+        self.temperature = CONFIG.eval_model.temperature or temperature
+        self.concurrency = CONFIG.eval_model.concurrency or concurrency
+
         # Setup environment
         self._setup_environment(phoenix_endpoint)
         
@@ -80,7 +81,7 @@ class RAGEvaluator:
         
         # Log first few samples for debugging
         if index < 3:
-            print(f"\nRAW[{index}]:\n{repr(s)}\n")
+            logger.info(f"\nRAW[{index}]:\n{repr(s)}\n")
 
         if not s:
             return {"__error__": "empty", "question_1": None, "question_2": None, "question_3": None}
@@ -121,7 +122,7 @@ class RAGEvaluator:
         
         df = self.client.query_spans(query, project_name=self.project_name)
         df = df.reset_index().rename(columns={"index": "context.span_id"})
-        print(f"Found {len(df)} retrieval spans to evaluate")
+        logger.info(f"Found {len(df)} retrieval spans to evaluate")
         return df
 
     def prepare_documents_dataframe(self, df: pd.DataFrame) -> pd.DataFrame:
@@ -153,8 +154,6 @@ class RAGEvaluator:
                 "input.value": "input"
             }
         )
-        
-        print(f"Prepared {len(retrieved_documents_df)} document entries for evaluation")
         return retrieved_documents_df
 
     def run_relevance_evaluation(self, documents_df: pd.DataFrame) -> pd.DataFrame:
@@ -169,7 +168,7 @@ class RAGEvaluator:
         """
         relevance_evaluator = RelevanceEvaluator(self.model)
         
-        print("Running relevance evaluation...")
+        logger.info("Running relevance evaluation...")
         retrieved_documents_relevance_df = run_evals(
             evaluators=[relevance_evaluator],
             dataframe=documents_df,
@@ -224,7 +223,7 @@ class RAGEvaluator:
         self.client.log_evaluations(
             DocumentEvaluations(eval_name=eval_name, dataframe=final_df),
         )
-        print(f"Logged {len(final_df)} document evaluations as '{eval_name}'")
+        logger.info(f"Logged {len(final_df)} document evaluations as '{eval_name}'")
 
     def run_full_rag_evaluation(self) -> pd.DataFrame:
         """
@@ -233,13 +232,12 @@ class RAGEvaluator:
         Returns:
             DataFrame with evaluation results
         """
-        print("Starting RAG evaluation pipeline...")
         
         # Get retrieval data
         retrieval_df = self.get_retrieval_data()
         
         if retrieval_df.empty:
-            print("No retrieval data to evaluate")
+            logger.info("No retrieval data to evaluate")
             return pd.DataFrame()
         
         # Prepare documents
@@ -250,10 +248,6 @@ class RAGEvaluator:
         
         # Prepare final DataFrame
         final_df = self.prepare_final_dataframe(documents_df, relevance_df)
-        
-        # Display sample results
-        print("\nRAG Evaluation Results:")
-        print(final_df.head())
         
         # Log to Phoenix
         self.log_evaluations(final_df)

@@ -10,14 +10,16 @@ from FlagEmbedding import FlagReranker
 from Phoenix.trace.tracing import tracer
 from opentelemetry.trace import Status, StatusCode
 
+from LiteLLM.common import CONFIG 
+
 
 # ---------- singletons (init đúng 1 lần) ----------
 @lru_cache(maxsize=1)
 def _bootstrap(
-    path: str = "DB_TEST",
-    collection_name: str = "journal_db",
-    embedding_model: str = "BAAI/bge-large-en-v1.5",
-    reranker_model: str = "BAAI/bge-reranker-v2-m3",
+    path: str = CONFIG.retrieve.path or "DB_TEST",
+    collection_name: str = CONFIG.retrieve.collection_name or "journal_db",
+    embedding_model: str = CONFIG.retrieve.embedding_model or "BAAI/bge-large-en-v1.5",
+    reranker_model: str = CONFIG.retrieve.rerank_model or "BAAI/bge-reranker-v2-m3",
 ):
     # embeddings
     embeddings = AutoEmbeddings.get_embeddings(embedding_model)
