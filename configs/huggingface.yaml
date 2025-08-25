@@ -14,3 +14,10 @@ eval_model:
   model: huggingface/together/Qwen/Qwen2.5-7B-Instruct
   api_key: API_key
   temperature: 0.0
+  concurrency: 20
+
+retrieve:
+  path: "DB_TEST"
+  embedding_model: "BAAI/bge-large-en-v1.5"
+  rerank_model: "BAAI/bge-reranker-v2-m3"
+  collection_name: "journal_db"
