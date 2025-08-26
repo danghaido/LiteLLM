@@ -8,7 +8,7 @@ from tools.rag import build_prompt
 if __name__ == "__main__":
     client = LiteLLMClient()
 
-    print("RAG REPL — nhập câu hỏi, gõ :q để thoát.")
+    print("RAG REPL — nhập câu hỏi, gõ quit để thoát.")
     try:
         while True:
             query = input(">>> ").strip()
