@@ -34,7 +34,7 @@ def build_prompt(query: str, top_k: int = 3) -> str:
             span.set_attribute("prompt.context.preview", context[:400])
 
             prompt = PROMPT_TEMPLATE.format(context=context, query=query)
-            span.set_attribute("output.value", prompt[:400])
+            span.set_attribute("output.value", prompt)
             span.set_status(Status(StatusCode.OK))
             return prompt
         except Exception as e:
