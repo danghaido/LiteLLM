@@ -68,7 +68,7 @@ def retrieve_chunks(query: str, top_k: int = 5, fetch_k: int = 50) -> List[str]:
             for idx, (doc_id, text, meta, score) in enumerate(top):
                 span.set_attribute(f"retrieval.documents.{idx}.document.id", str(doc_id))
                 span.set_attribute(f"retrieval.documents.{idx}.document.score", float(score))
-                span.set_attribute(f"retrieval.documents.{idx}.document.content", text[:400])
+                span.set_attribute(f"retrieval.documents.{idx}.document.content", text)
                 if isinstance(meta, dict):
                     for k, v in meta.items():
                         if isinstance(v, (str, int, float, bool)) or v is None:

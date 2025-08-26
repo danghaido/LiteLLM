@@ -15,14 +15,25 @@ B1: Cap quyen cho scripts
 chmod +x run_scripts/query.sh run_scripts/auto_query.sh
 
 B2: Chay scripts
+
 ./run_scripts/query.sh
 
 ./run_scripts/auto_query.sh
 
-# Run Scripts tren windows
+# Run query Scripts tren windows
 
 python -m LiteLLM.scripts.query
 
-python -m LiteLLM.scripts.batch_query
+python -m LiteLLM.scripts.auto_query
+
+# Evaluation metrics
 
 python -m LiteLLM.scripts.evaluation
+## Available Metrics
+
+### 1. **Q&A Evaluation** (`"Q&A"` or `"qa"`)
+### 2. **Hallucination Detection** (`"hallucination"`)
+### 3. **Relevance Evaluation** (`"relevance"`)
+### 4. **Toxicity Detection** (`"toxicity"`)
+### 5. **Human Evaluation** (`"human_evaluation"`)
+### 6. **Custom Evaluation** (`"custom"`)

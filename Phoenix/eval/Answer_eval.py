@@ -11,6 +11,12 @@ from phoenix.trace.dsl import SpanQuery
 from phoenix.trace import SpanEvaluations, using_project
 
 from LiteLLM.common import CONFIG
+from Phoenix.eval.Evaluation_Metrics import (
+    EvaluationMetrics,
+    EvaluationTemplates,
+    EvaluationRails,
+    parse_evaluation_metric,
+)
 
 
 class AnswerEval:
@@ -18,53 +24,39 @@ class AnswerEval:
     A class for evaluating LLM responses using Phoenix tracing and evaluation framework.
     """
 
-    QA_TEMPLATE = """
-            You are given a question, an answer and reference text. You must determine whether the
-            given answer correctly answers the question based on the reference text. Here is the data:
-                [BEGIN DATA]
-                ************
-                [Question]: {input}
-                ************
-                [Reference]: {reference}
-                ************
-                [Answer]: {output}
-                [END DATA]
-            Please read the query, reference text and answer carefully, then write out in a step by step manner
-            an EXPLANATION to show how to determine if the answer is "correct" or "incorrect". Avoid simply
-            stating the correct answer at the outset. Your response LABEL must be a single word, either
-            "correct" or "incorrect", and should not contain any text or characters aside from that word.
-            "correct" means that the question is correctly and fully answered by the answer.
-            "incorrect" means that the question is not correctly or only partially answered by the
-            answer.
-
-            Example response:
-            ************
-            EXPLANATION: An explanation of your reasoning for why the label is "correct" or "incorrect"
-            LABEL: "correct" or "incorrect"
-            ************
-
-            EXPLANATION:
-        """
-
     def __init__(
         self,
+        evaluation_metric: str = "Q&A",
+        custom_template: Optional[str] = None,
+        custom_rails: Optional[List[str]] = None,
         project_name: str = "hugging-face",
         model_name: str = "huggingface/together/Qwen/Qwen2.5-7B-Instruct",
         temperature: float = 0.0,
         phoenix_endpoint: str = "http://localhost:6006",
+        dataset: str = "ai_studio_code",
     ):
-        """
-        Initialize the evaluation system.
+        self.evaluation_metric = parse_evaluation_metric(evaluation_metric)
 
-        Args:
-            project_name: Phoenix project name
-            model_name: LLM model to use for evaluation
-            temperature: Temperature for model inference
-            phoenix_endpoint: Phoenix collector endpoint
-        """
-        self.project_name = CONFIG.project
+        # Set template and rails
+        if self.evaluation_metric == EvaluationMetrics.CUSTOM:
+            if not custom_template:
+                raise ValueError(
+                    "custom_template is required when using 'custom' evaluation metric"
+                )
+            self.template = custom_template
+            self.rails = custom_rails or EvaluationRails.get_rails(
+                EvaluationMetrics.CUSTOM
+            )
+        else:
+            self.template = EvaluationTemplates.get_template(self.evaluation_metric)
+            self.rails = custom_rails or EvaluationRails.get_rails(
+                self.evaluation_metric
+            )
+
+        self.project_name = CONFIG.project or project_name
         self.model_name = CONFIG.eval_model.model or model_name
         self.temperature = CONFIG.eval_model.temperature or temperature
+        self.dataset = CONFIG.dataset or dataset
 
         # Setup environment
         self._setup_environment(phoenix_endpoint)
@@ -77,9 +69,6 @@ class AnswerEval:
 
         # Initialize Phoenix client
         self.client = px.Client()
-
-        # Configure pandas display
-        pd.set_option("display.max_colwidth", None)
 
     def _setup_environment(self, phoenix_endpoint: str) -> None:
         """Setup environment variables and debugging."""
@@ -176,18 +165,44 @@ class AnswerEval:
         )
         return spans_with_docs_df
 
-    def prepare_evaluation_dataset(self) -> tuple[pd.DataFrame, pd.DataFrame]:
+    def get_expected_answer_data(self) -> pd.DataFrame:
+        """
+        Fetch expected answers from Phoenix.
+
+        Returns:
+            DataFrame with expected answers
+        """
+        dataset = self.client.get_dataset(name=self.dataset)
+        examples = dataset.examples
+        rows = []
+        for ex_id, ex in examples.items():
+            row = {
+                "id": ex_id,
+                **ex.input,
+                **ex.output,
+            }
+            rows.append(row)
+
+        expected_answers_df = pd.DataFrame(rows).rename(columns={"question": "input"})
+        return expected_answers_df
+
+    def prepare_evaluation_dataset(self) -> pd.DataFrame:
         """
         Prepare the complete dataset for evaluation.
 
         Returns:
-            Tuple of (evaluation_df, merged_df)
+            DataFrame with merged evaluation and reference data
         """
         # Get evaluation data
         eval_df = self.get_evaluation_data()
 
         # Get reference data
         reference_df = self.get_reference_data()
+
+        # Get expected answer data
+        expected_answers_df = self.get_expected_answer_data()
+        print(expected_answers_df)
+        print(expected_answers_df.columns)
 
         # Merge evaluation and reference data
         merged_df = pd.merge(
@@ -199,17 +214,24 @@ class AnswerEval:
             how="left",
             suffixes=("_chain", "_tool"),
         )
-        print(merged_df)
         merged_df.index = eval_df.index
         merged_df.index.name = eval_df.index.name
-        print("Index name:", merged_df.index.name)
-        return eval_df, merged_df
+
+        final_df = pd.merge(
+            merged_df,
+            expected_answers_df,
+            on="input",
+            how="left",
+            suffixes=("_left", "_right"),
+        )
+        final_df.index = merged_df.index
+        final_df.index.name = merged_df.index.name
+        print(final_df.index)
+        return final_df
 
     def run_evaluation(
         self,
         data: pd.DataFrame,
-        template: Optional[str] = None,
-        rails: Optional[List[str]] = None,
         provide_explanation: bool = True,
     ) -> pd.DataFrame:
         """
@@ -224,21 +246,19 @@ class AnswerEval:
         Returns:
             DataFrame with evaluation results
         """
-        template = template or self.QA_TEMPLATE
-        rails = rails or ["correct", "incorrect"]
 
         with using_project(self.project_name):
             evals_df = llm_classify(
                 data=data,
-                template=template,
+                template=self.template,
                 model=self.model,
-                rails=rails,
+                rails=self.rails,
                 provide_explanation=provide_explanation,
             )
         return evals_df
 
     def log_evaluations(
-        self, evals_df: pd.DataFrame, eval_name: str = "correctness"
+        self, evals_df: pd.DataFrame, eval_name: Optional[str] = None
     ) -> None:
         """
         Log evaluation results to Phoenix.
@@ -247,9 +267,8 @@ class AnswerEval:
             evals_df: DataFrame with evaluation results
             eval_name: Name for the evaluation
         """
+        eval_name = eval_name or self.evaluation_metric.value
         evals_df["metadata"] = self.model_name
-        print(evals_df)
-        print(evals_df.columns)
         self.client.log_evaluations(
             SpanEvaluations(eval_name=eval_name, dataframe=evals_df),
         )
@@ -265,11 +284,7 @@ class AnswerEval:
         print("Starting evaluation pipeline...")
 
         # Prepare dataset
-        eval_df, merged_df = self.prepare_evaluation_dataset()
-
-        if eval_df.empty:
-            print("No data to evaluate")
-            return pd.DataFrame()
+        merged_df = self.prepare_evaluation_dataset()
 
         # Run evaluation
         print("Running LLM evaluation...")
@@ -282,7 +297,7 @@ class AnswerEval:
 
 def main():
     """Main function to run evaluation."""
-    evaluator = AnswerEval()
+    evaluator = AnswerEval("human_evaluation")
     results = evaluator.run_full_evaluation()
     return results
 

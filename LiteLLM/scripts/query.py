@@ -1,5 +1,5 @@
 from opentelemetry.trace import Status, StatusCode
-from Phoenix.trace.tracing import tracer 
+from Phoenix.trace.tracing import tracer
 
 from LiteLLM.lite import LiteLLMClient
 from LiteLLM.Response import ResponseInput
@@ -22,7 +22,7 @@ if __name__ == "__main__":
                 span.set_attribute("input.value", query)
 
                 try:
-                    prompt = build_prompt(query, top_k=3)
+                    prompt = build_prompt(query, top_k=5)
 
                     msg = ResponseInput(prompt)
                     response = client.complete([msg])
@@ -31,7 +31,7 @@ if __name__ == "__main__":
                     print(f"Answer from LLM: {out}")
                     print(response.usage())
 
-                    span.set_attribute("output.value", out[:400])
+                    span.set_attribute("output.value", out)
                     span.set_status(Status(StatusCode.OK))
                 except Exception as e:
                     span.record_exception(e)
