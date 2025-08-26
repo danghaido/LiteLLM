@@ -18,13 +18,13 @@ def prepare_data():
     for ex_id, ex in examples.items():
         row = {
             "id": ex_id,
-            row["input"] = ex.input["question"]
-            row["output"] = ex.output["expected_answer"]
+            **ex.input,
+            **ex.output,
         }
         rows.append(row)
 
     df = pd.DataFrame(rows)
-    queries_text = df["input"].tolist()
+    queries_text = df["question"].tolist()
 
     return queries_text
 

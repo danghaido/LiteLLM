@@ -12,36 +12,50 @@ from phoenix.trace import SpanEvaluations, using_project
 
 from LiteLLM.common import CONFIG
 
+
 class AnswerEval:
     """
     A class for evaluating LLM responses using Phoenix tracing and evaluation framework.
     """
-    
-    QA_TEMPLATE = """You are given a question and an answer.
-        Decide if the answer correctly and fully answers the question.
 
-        [Question]
-        {input}
+    QA_TEMPLATE = """
+            You are given a question, an answer and reference text. You must determine whether the
+            given answer correctly answers the question based on the reference text. Here is the data:
+                [BEGIN DATA]
+                ************
+                [Question]: {input}
+                ************
+                [Reference]: {reference}
+                ************
+                [Answer]: {output}
+                [END DATA]
+            Please read the query, reference text and answer carefully, then write out in a step by step manner
+            an EXPLANATION to show how to determine if the answer is "correct" or "incorrect". Avoid simply
+            stating the correct answer at the outset. Your response LABEL must be a single word, either
+            "correct" or "incorrect", and should not contain any text or characters aside from that word.
+            "correct" means that the question is correctly and fully answered by the answer.
+            "incorrect" means that the question is not correctly or only partially answered by the
+            answer.
 
-        [Answer]
-        {output}
+            Example response:
+            ************
+            EXPLANATION: An explanation of your reasoning for why the label is "correct" or "incorrect"
+            LABEL: "correct" or "incorrect"
+            ************
 
-        First, briefly explain your reasoning (1–3 sentences).
-        Then, on the **last line**, output must ONLY BE ONE of the following labels (all lowercase):
-        correct
-        incorrect
-    """
+            EXPLANATION:
+        """
 
     def __init__(
-        self, 
+        self,
         project_name: str = "hugging-face",
         model_name: str = "huggingface/together/Qwen/Qwen2.5-7B-Instruct",
         temperature: float = 0.0,
-        phoenix_endpoint: str = "http://localhost:6006"
+        phoenix_endpoint: str = "http://localhost:6006",
     ):
         """
         Initialize the evaluation system.
-        
+
         Args:
             project_name: Phoenix project name
             model_name: LLM model to use for evaluation
@@ -51,19 +65,19 @@ class AnswerEval:
         self.project_name = CONFIG.project
         self.model_name = CONFIG.eval_model.model or model_name
         self.temperature = CONFIG.eval_model.temperature or temperature
-        
+
         # Setup environment
         self._setup_environment(phoenix_endpoint)
-        
+
         # Initialize model
         self.model = LiteLLMModel(
             model=self.model_name,
             temperature=self.temperature,
         )
-        
+
         # Initialize Phoenix client
         self.client = px.Client()
-        
+
         # Configure pandas display
         pd.set_option("display.max_colwidth", None)
 
@@ -72,7 +86,6 @@ class AnswerEval:
         os.environ["PHOENIX_COLLECTOR_ENDPOINT"] = phoenix_endpoint
         os.environ[CONFIG.eval_model.env] = CONFIG.eval_model.api_key
         litellm._turn_on_debug()
-
 
     @staticmethod
     def normalize_newline(s: str) -> str:
@@ -101,108 +114,119 @@ class AnswerEval:
 
         tmp["ref_items"] = tmp[ref_col].apply(self.split_ref_items)
 
-        tmp = tmp.loc[tmp["ref_items"].map(lambda x: isinstance(x, list) and len(x) > 0)].copy()
+        tmp = tmp.loc[
+            tmp["ref_items"].map(lambda x: isinstance(x, list) and len(x) > 0)
+        ].copy()
         if tmp.empty:
-            return pd.DataFrame(columns=["context.trace_id", "ref_id", "ref_text"])
+            return pd.DataFrame(columns=["context.trace_id", "ref_id", "reference"])
 
         out = tmp.explode("ref_items", ignore_index=True)
 
         pairs = out["ref_items"].apply(pd.Series)
-        pairs.columns = ["ref_id", "ref_text"]
+        pairs.columns = ["ref_id", "reference"]
 
         out = pd.concat(
-            [out[["context.trace_id"]].reset_index(drop=True), pairs.reset_index(drop=True)],
+            [
+                out[["context.trace_id"]].reset_index(drop=True),
+                pairs.reset_index(drop=True),
+            ],
             axis=1,
         )
 
         out["ref_id"] = pd.to_numeric(out["ref_id"], errors="coerce").astype("Int64")
 
-        return out[["context.trace_id", "ref_text"]]
+        return out[["context.trace_id", "reference"]]
 
     def get_evaluation_data(self) -> pd.DataFrame:
         """
         Fetch spans that need evaluation from Phoenix.
-        
+
         Returns:
             DataFrame with spans to evaluate
         """
-        query = SpanQuery().where(
-            "span_kind == 'CHAIN'"
-        ).select("trace_id", input="input.value", output="output.value")
-        
+        query = (
+            SpanQuery()
+            .where("span_kind == 'CHAIN'")
+            .select(
+                "context.span_id",
+                "context.trace_id",
+                input="input.value",
+                output="output.value",
+            )
+        )
+
         df = self.client.query_spans(query, project_name=self.project_name)
-        print(f"Found {len(df)} spans to evaluate")
         return df
 
     def get_reference_data(self) -> pd.DataFrame:
         """
         Fetch reference/tool spans from Phoenix.
-        
+
         Returns:
             DataFrame with reference data
         """
-        reference_query = SpanQuery().where(
-            "span_kind == 'TOOL'"
-        ).select("trace_id", ref="prompt.context.preview")
-        
-        spans_with_docs_df = self.client.query_spans(
-            reference_query, 
-            project_name=self.project_name
+        reference_query = (
+            SpanQuery()
+            .where("span_kind == 'TOOL'")
+            .select("context.span_id", "context.trace_id", ref="prompt.context.preview")
         )
-        print(f"Found {len(spans_with_docs_df)} reference spans")
+
+        spans_with_docs_df = self.client.query_spans(
+            reference_query, project_name=self.project_name
+        )
         return spans_with_docs_df
 
     def prepare_evaluation_dataset(self) -> tuple[pd.DataFrame, pd.DataFrame]:
         """
         Prepare the complete dataset for evaluation.
-        
+
         Returns:
             Tuple of (evaluation_df, merged_df)
         """
         # Get evaluation data
         eval_df = self.get_evaluation_data()
-        
+
         # Get reference data
         reference_df = self.get_reference_data()
-        
-        # Process reference data
-        document_chunks_df = self.explode_refs(reference_df)
-        print("Exploded reference format:\n", document_chunks_df.head())
-        
+
         # Merge evaluation and reference data
         merged_df = pd.merge(
             eval_df,
-            reference_df,
+            reference_df.rename(columns={"ref": "reference"})[
+                ["context.trace_id", "reference"]
+            ],
             on="context.trace_id",
-            how="inner",
-            suffixes=("_chain", "_tool")
+            how="left",
+            suffixes=("_chain", "_tool"),
         )
-        print(f"Merged dataset shape: {merged_df.shape}")
-        
+        print(merged_df)
+        merged_df.index = eval_df.index
+        merged_df.index.name = eval_df.index.name
+        print("Index name:", merged_df.index.name)
         return eval_df, merged_df
 
     def run_evaluation(
-        self, 
-        data: pd.DataFrame, 
+        self,
+        data: pd.DataFrame,
         template: Optional[str] = None,
         rails: Optional[List[str]] = None,
-        provide_explanation: bool = True
+        provide_explanation: bool = True,
     ) -> pd.DataFrame:
         """
         Run LLM-based evaluation on the provided data.
-        
+
         Args:
             data: DataFrame with input/output columns
             template: Evaluation template (uses default if None)
             rails: List of allowed labels (uses default if None)
             provide_explanation: Whether to include explanations
-            
+
         Returns:
             DataFrame with evaluation results
         """
         template = template or self.QA_TEMPLATE
         rails = rails or ["correct", "incorrect"]
-        
+
         with using_project(self.project_name):
             evals_df = llm_classify(
                 data=data,
@@ -211,17 +235,21 @@ class AnswerEval:
                 rails=rails,
                 provide_explanation=provide_explanation,
             )
-        
         return evals_df
 
-    def log_evaluations(self, evals_df: pd.DataFrame, eval_name: str = "valid") -> None:
+    def log_evaluations(
+        self, evals_df: pd.DataFrame, eval_name: str = "correctness"
+    ) -> None:
         """
         Log evaluation results to Phoenix.
-        
+
         Args:
             evals_df: DataFrame with evaluation results
             eval_name: Name for the evaluation
         """
+        evals_df["metadata"] = self.model_name
+        print(evals_df)
+        print(evals_df.columns)
         self.client.log_evaluations(
             SpanEvaluations(eval_name=eval_name, dataframe=evals_df),
         )
@@ -230,26 +258,25 @@ class AnswerEval:
     def run_full_evaluation(self) -> pd.DataFrame:
         """
         Run the complete evaluation pipeline.
-        
+
         Returns:
             DataFrame with evaluation results
         """
         print("Starting evaluation pipeline...")
-        
+
         # Prepare dataset
         eval_df, merged_df = self.prepare_evaluation_dataset()
-        
+
         if eval_df.empty:
             print("No data to evaluate")
             return pd.DataFrame()
-        
+
         # Run evaluation
         print("Running LLM evaluation...")
-        evals_df = self.run_evaluation(eval_df)
-        
+        evals_df = self.run_evaluation(merged_df)
         # Log to Phoenix
         self.log_evaluations(evals_df)
-        
+
         return evals_df
 
 

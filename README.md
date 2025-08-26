@@ -24,3 +24,5 @@ B2: Chay scripts
 python -m LiteLLM.scripts.query
 
 python -m LiteLLM.scripts.batch_query
+
+python -m LiteLLM.scripts.evaluation
