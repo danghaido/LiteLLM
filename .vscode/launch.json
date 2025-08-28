@@ -6,7 +6,7 @@
             "name": "Run query (module)",
             "type": "debugpy",
             "request": "launch",
-            "module": "LiteLLM.scripts.query",
+            "module": "LiteLLM.scripts.auto_query",
             "cwd": "${workspaceFolder}",
             "console": "integratedTerminal",
             "justMyCode": true,

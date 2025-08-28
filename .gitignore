@@ -5,6 +5,8 @@ build/
 dist/
 wheels/
 *.egg-info
+.chroma_sumco_300_3
+DB_SUMCO
 
 # Virtual environments
 .venv

@@ -10,6 +10,16 @@ B3: uv sync
 ## Huggingface
 Nho phai co Make calls to Inference Providers
 
+## OpenAI, Gemini
+Key mat phi moi chay duoc
+
+# Arize phoenix
+Su dung docker de chay local
+
+cd EvaluateLLM/Phoenix/ci
+docker compose up (Windows)
+sudo docker compose up (Linux)
+
 # Run scripts
 B1: Cap quyen cho scripts
 chmod +x run_scripts/query.sh run_scripts/auto_query.sh

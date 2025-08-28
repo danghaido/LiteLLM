@@ -1,3 +1,5 @@
+import os
+
 from loguru import logger
 
 from Phoenix.eval.Answer_eval import AnswerEval
@@ -11,6 +13,11 @@ def run_combined_evaluation():
     logger.info("=" * 60)
     logger.info("STARTING COMBINED EVALUATION")
     logger.info("=" * 60)
+
+    if os.getenv("FROM_AUTO_QUERY") == "true":
+        logger.info("Running Human Evaluation...")
+        evaluator = AnswerEval("human_evaluation")
+        results = evaluator.run_full_evaluation()
 
     # Run Evaluation
     logger.info("Running Hallucination Evaluation...")
