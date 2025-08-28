@@ -10,7 +10,7 @@ from tools.rag import build_prompt
 
 def prepare_data():
     client = px.Client()
-    dataset = client.get_dataset(name="ai_studio_code")
+    dataset = client.get_dataset(name="japan")
 
     examples = dataset.examples
 
@@ -39,7 +39,7 @@ if __name__ == "__main__":
             span.set_attribute("input.value", query)
 
             try:
-                prompt = build_prompt(query, top_k=3)
+                prompt = build_prompt(query, top_k=5)
 
                 msg = ResponseInput(prompt)
                 response = client.complete([msg])

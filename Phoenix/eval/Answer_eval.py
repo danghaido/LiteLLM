@@ -226,7 +226,7 @@ class AnswerEval:
         )
         final_df.index = merged_df.index
         final_df.index.name = merged_df.index.name
-        print(final_df.index)
+        print(final_df)
         return final_df
 
     def run_evaluation(

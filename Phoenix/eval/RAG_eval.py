@@ -8,7 +8,7 @@ import phoenix as px
 import pandas as pd
 from loguru import logger
 
-from phoenix.evals import llm_classify, LiteLLMModel, RelevanceEvaluator, run_evals
+from phoenix.evals import LiteLLMModel, RelevanceEvaluator, run_evals
 from phoenix.trace.dsl import SpanQuery
 from phoenix.trace import SpanEvaluations, using_project, DocumentEvaluations
 
