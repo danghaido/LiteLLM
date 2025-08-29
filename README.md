@@ -1,45 +1,79 @@
-# Moi truong
-Neu khong co uv: pip install uv
+# Khởi tạo môi trường (Sử dụng uv)
+pip install uv
 
 B1: uv venv
+
 B2: source .venv/bin/activate
+
 B3: uv sync
 
-# API Key
-
-## Huggingface
-Nho phai co Make calls to Inference Providers
-
-## OpenAI, Gemini
-Key mat phi moi chay duoc
-
 # Arize phoenix
-Su dung docker de chay local
+## Run Phoenix locally using Docker.
 
-cd EvaluateLLM/Phoenix/ci
-docker compose up (Windows)
-sudo docker compose up (Linux)
+### Steps
+
+- Open terminal
+
+- cd EvaluateLLM/Phoenix/ci
+
+- docker compose up (Windows)
+
+- sudo docker compose up (Linux)
+
+- Then open: http://localhost:6006/
+
+# Configs
+
+Project parameters can be changed via huggingface.yaml
+
+## API Key
+
+### Huggingface
+Create an API key with “Make Calls” permission to use Inference Providers.
+
+### OpenAI, Gemini
+Paid keys are required for successful runs.
+
+## Retrieve
+Configure locations/models for:
+- Database path
+
+- Embedding model
+
+- Reranker model
+
+- top_k
+
+(Manage these in your config as appropriate for your project.)
 
 # Run scripts
-B1: Cap quyen cho scripts
+
+## Make scripts executable:
 chmod +x run_scripts/query.sh run_scripts/auto_query.sh
 
-B2: Chay scripts
+## Run queries:
 
+### Single query and realtime interact on terminal
 ./run_scripts/query.sh
 
-./run_scripts/auto_query.sh
+### Run full dataset query automatic and have csv evaluation
+- First create a new dataset on arize local host http://localhost:6006/
 
-# Run query Scripts tren windows
+- Set the dataset name in huggingface.yaml
 
-python -m LiteLLM.scripts.query
+- Run ./run_scripts/auto_query.sh
 
-python -m LiteLLM.scripts.auto_query
+### Run session and realtime interact through gradio
+
+- ./run_scripts/session.sh
 
 # Evaluation metrics
 
-python -m LiteLLM.scripts.evaluation
+## Run evaluation with available traces and have csv evaluation file
+./run_scripts/evaluation.sh
+
 ## Available Metrics
+Can add or remove metrics in evaluation file
 
 ### 1. **Q&A Evaluation** (`"Q&A"` or `"qa"`)
 ### 2. **Hallucination Detection** (`"hallucination"`)
