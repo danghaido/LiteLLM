@@ -7,10 +7,11 @@ import phoenix as px
 import pandas as pd
 
 from tools.rag import build_prompt
+from LiteLLM.common import CONFIG
 
 def prepare_data():
     client = px.Client()
-    dataset = client.get_dataset(name="japan")
+    dataset = client.get_dataset(name=CONFIG.dataset)
 
     examples = dataset.examples
 
@@ -39,7 +40,7 @@ if __name__ == "__main__":
             span.set_attribute("input.value", query)
 
             try:
-                prompt = build_prompt(query, top_k=5)
+                prompt = build_prompt(query, top_k=CONFIG.retrieve.top_k)
 
                 msg = ResponseInput(prompt)
                 response = client.complete([msg])
