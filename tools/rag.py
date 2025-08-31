@@ -12,7 +12,7 @@ Question: {query}
 """
 
 
-def build_prompt(query: str, top_k: int = 3) -> str:
+def build_prompt(query: str, top_k: int = 5) -> str:
     with tracer.start_as_current_span("build_prompt") as span:
         span.set_attribute("openinference.span.kind", "TOOL")
         span.set_attribute("tool.name", "build_prompt")
@@ -31,7 +31,7 @@ def build_prompt(query: str, top_k: int = 3) -> str:
 
             # log ids + preview context
             span.set_attribute("prompt.context.ids", list(range(1, len(chunks) + 1)))
-            span.set_attribute("prompt.context.preview", context[:400])
+            span.set_attribute("prompt.context.preview", context)
 
             prompt = PROMPT_TEMPLATE.format(context=context, query=query)
             span.set_attribute("output.value", prompt)

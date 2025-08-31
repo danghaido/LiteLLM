@@ -1,7 +1,10 @@
+import os
+
 from loguru import logger
 
 from Phoenix.eval.Answer_eval import AnswerEval
 from Phoenix.eval.RAG_eval import RAGEvaluator
+from tools.export_csv import export_evaluation_to_csv
 
 
 def run_combined_evaluation():
@@ -11,6 +14,11 @@ def run_combined_evaluation():
     logger.info("=" * 60)
     logger.info("STARTING COMBINED EVALUATION")
     logger.info("=" * 60)
+
+    if os.getenv("FROM_AUTO_QUERY") == "true":
+        logger.info("Running Human Evaluation...")
+        evaluator = AnswerEval("human_evaluation")
+        results = evaluator.run_full_evaluation()
 
     # Run Evaluation
     logger.info("Running Hallucination Evaluation...")
@@ -32,6 +40,11 @@ def run_combined_evaluation():
     logger.info("=" * 60)
     logger.success("BOTH EVALUATIONS COMPLETED")
     logger.info("=" * 60)
+
+    # Export to CSV
+    logger.info("Exporting results to CSV...")
+    export_evaluation_to_csv()
+    logger.success("Export completed.")
 
 
 if __name__ == "__main__":

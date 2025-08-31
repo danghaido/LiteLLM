@@ -50,13 +50,12 @@ def retrieve_chunks(query: str, top_k: int = 5, fetch_k: int = 50) -> List[str]:
                 n_results=fetch_k,
                 include=["documents", "metadatas"],
             )
-
             docs: List[str]      = res["documents"][0]
             metas: List[Dict]    = res["metadatas"][0]
             ids:   List[str]     = res["ids"][0]
 
             for i, (doc_id, text) in enumerate(zip(ids, docs)):
-                notification = f"Retrieved doc {i}: {doc_id} :: {text[:120]}"
+                notification = f"Retrieved doc {i}: {doc_id} :: {text}"
                 span.add_event(notification)
 
             pairs = [[query, t] for t in docs]
