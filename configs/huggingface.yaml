@@ -1,6 +1,6 @@
 env_key: HUGGINGFACE_API_KEY
-api_key:  API_key
-api_base: https://api-inference.huggingface.co
+api_key: API_KEY
+url_base: https://api-inference.huggingface.co
 model: huggingface/together/Qwen/Qwen2.5-7B-Instruct
 project: hugging-face
 dataset: NGUUU
@@ -12,8 +12,8 @@ extra_env:
 
 eval_model:
   model: gpt-4o-mini
-  api_key: API_key
-  env: OPENAI_API_KEY 
+  api_key: API_KEY
+  env: OPENAI_API_KEY
   temperature: 0.0
   concurrency: 20
 
