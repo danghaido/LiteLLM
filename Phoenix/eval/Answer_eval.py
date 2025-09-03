@@ -201,8 +201,6 @@ class AnswerEval:
 
         # Get expected answer data
         expected_answers_df = self.get_expected_answer_data()
-        print(expected_answers_df)
-        print(expected_answers_df.columns)
 
         # Merge evaluation and reference data
         merged_df = pd.merge(
@@ -226,7 +224,6 @@ class AnswerEval:
         )
         final_df.index = merged_df.index
         final_df.index.name = merged_df.index.name
-        print(final_df)
         return final_df
 
     def run_evaluation(
@@ -272,7 +269,6 @@ class AnswerEval:
         self.client.log_evaluations(
             SpanEvaluations(eval_name=eval_name, dataframe=evals_df),
         )
-        print(f"Logged {len(evals_df)} evaluations as '{eval_name}'")
 
     def run_full_evaluation(self) -> pd.DataFrame:
         """
@@ -281,13 +277,11 @@ class AnswerEval:
         Returns:
             DataFrame with evaluation results
         """
-        print("Starting evaluation pipeline...")
 
         # Prepare dataset
         merged_df = self.prepare_evaluation_dataset()
 
         # Run evaluation
-        print("Running LLM evaluation...")
         evals_df = self.run_evaluation(merged_df)
         # Log to Phoenix
         self.log_evaluations(evals_df)
