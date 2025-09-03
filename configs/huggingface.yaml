@@ -1,5 +1,5 @@
 env_key: HUGGINGFACE_API_KEY
-api_key:  API_KEY
+api_key: AAA
 url_base: https://api-inference.huggingface.co
 model: huggingface/together/Qwen/Qwen2.5-7B-Instruct
 project: hugging-face
@@ -12,8 +12,8 @@ extra_env:
 
 eval_model:
   model: gpt-4o-mini
-  api_key: API_KEY
-  env: OPENAI_API_KEY 
+  api_key: AAA
+  env: OPENAI_API_KEY
   temperature: 0.0
   concurrency: 20
 
