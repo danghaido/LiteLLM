@@ -1,22 +1,22 @@
 import os
 import re
-from typing import Optional, List, Dict, Any
+from typing import Any, Dict, List, Optional
 
-import litellm
-import phoenix as px
 import pandas as pd
-
-from phoenix.evals import llm_classify, LiteLLMModel
-from phoenix.trace.dsl import SpanQuery
+from phoenix.evals import LiteLLMModel, llm_classify
+from phoenix.session.client import Client
 from phoenix.trace import SpanEvaluations, using_project
+from phoenix.trace.dsl import SpanQuery
 
-from LiteLLM.common import CONFIG
-from Phoenix.eval.Evaluation_Metrics import (
+import litellm_client
+from litellm_client.common import CONFIG
+from phoenix_tools.eval.evaluation_metrics import (
     EvaluationMetrics,
-    EvaluationTemplates,
     EvaluationRails,
+    EvaluationTemplates,
     parse_evaluation_metric,
 )
+from phoenix_tools.models.openai_model import OpenAIModel
 
 
 class AnswerEval:
@@ -30,10 +30,10 @@ class AnswerEval:
         custom_template: Optional[str] = None,
         custom_rails: Optional[List[str]] = None,
         project_name: str = "hugging-face",
-        model_name: str = "huggingface/together/Qwen/Qwen2.5-7B-Instruct",
         temperature: float = 0.0,
-        phoenix_endpoint: str = "http://localhost:6006",
         dataset: str = "ai_studio_code",
+        client: Client = Client(),
+        model: OpenAIModel = OpenAIModel(),
     ):
         self.evaluation_metric = parse_evaluation_metric(evaluation_metric)
 
@@ -54,27 +54,14 @@ class AnswerEval:
             )
 
         self.project_name = CONFIG.project or project_name
-        self.model_name = CONFIG.eval_model.model or model_name
         self.temperature = CONFIG.eval_model.temperature or temperature
         self.dataset = CONFIG.dataset or dataset
 
-        # Setup environment
-        self._setup_environment(phoenix_endpoint)
-
         # Initialize model
-        self.model = LiteLLMModel(
-            model=self.model_name,
-            temperature=self.temperature,
-        )
+        self.model = model
 
         # Initialize Phoenix client
-        self.client = px.Client()
-
-    def _setup_environment(self, phoenix_endpoint: str) -> None:
-        """Setup environment variables and debugging."""
-        os.environ["PHOENIX_COLLECTOR_ENDPOINT"] = phoenix_endpoint
-        os.environ[CONFIG.eval_model.env] = CONFIG.eval_model.api_key
-        litellm._turn_on_debug()
+        self.client = client
 
     @staticmethod
     def normalize_newline(s: str) -> str:
@@ -265,7 +252,7 @@ class AnswerEval:
             eval_name: Name for the evaluation
         """
         eval_name = eval_name or self.evaluation_metric.value
-        evals_df["metadata"] = self.model_name
+        evals_df["metadata"] = self.model._model_name
         self.client.log_evaluations(
             SpanEvaluations(eval_name=eval_name, dataframe=evals_df),
         )

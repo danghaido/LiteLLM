@@ -2,8 +2,8 @@ import os
 
 from loguru import logger
 
-from Phoenix.eval.Answer_eval import AnswerEval
-from Phoenix.eval.RAG_eval import RAGEvaluator
+from phoenix_tools.eval.answer_eval import AnswerEval
+from phoenix_tools.eval.rag_eval import RAGEvaluator
 from tools.export_csv import export_evaluation_to_csv
 
 

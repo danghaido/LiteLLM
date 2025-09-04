@@ -1,18 +1,18 @@
+import json
 import os
 import re
-import json
-from typing import Optional, List, Dict, Any
+from typing import Any, Dict, List, Optional
 
-import litellm
-import phoenix as px
 import pandas as pd
 from loguru import logger
-
 from phoenix.evals import LiteLLMModel, RelevanceEvaluator, run_evals
+from phoenix.session.client import Client
+from phoenix.trace import DocumentEvaluations
 from phoenix.trace.dsl import SpanQuery
-from phoenix.trace import SpanEvaluations, using_project, DocumentEvaluations
 
-from LiteLLM.common import CONFIG
+import litellm_client
+from litellm_client.common import CONFIG
+from phoenix_tools.models.openai_model import OpenAIModel
 
 
 class RAGEvaluator:
@@ -24,46 +24,31 @@ class RAGEvaluator:
     def __init__(
         self,
         project_name: str = "hugging-face",
-        model_name: str = "huggingface/together/Qwen/Qwen2.5-7B-Instruct",
         temperature: float = 0.0,
-        phoenix_endpoint: str = "http://localhost:6006",
         concurrency: int = 20,
+        client: Client = Client(),
+        model: OpenAIModel = OpenAIModel(),
     ):
         """
         Initialize the RAG evaluation system.
 
         Args:
             project_name: Phoenix project name
-            model_name: LLM model to use for evaluation
             temperature: Temperature for model inference
-            phoenix_endpoint: Phoenix collector endpoint
             concurrency: Number of concurrent evaluation requests
         """
         self.project_name = CONFIG.project or project_name
-        self.model_name = CONFIG.eval_model.model or model_name
         self.temperature = CONFIG.eval_model.temperature or temperature
         self.concurrency = CONFIG.eval_model.concurrency or concurrency
 
-        # Setup environment
-        self._setup_environment(phoenix_endpoint)
-
         # Initialize model
-        self.model = LiteLLMModel(
-            model=self.model_name,
-            temperature=self.temperature,
-        )
+        self.model = model
 
         # Initialize Phoenix client
-        self.client = px.Client()
+        self.client = client
 
         # Configure pandas display
         pd.set_option("display.max_colwidth", None)
-
-    def _setup_environment(self, phoenix_endpoint: str) -> None:
-        """Setup environment variables and debugging."""
-        os.environ["PHOENIX_COLLECTOR_ENDPOINT"] = phoenix_endpoint
-        os.environ[CONFIG.eval_model.env] = CONFIG.eval_model.api_key
-        litellm._turn_on_debug()
 
     @staticmethod
     def robust_output_parser(response: str, index: int) -> Dict[str, Any]:

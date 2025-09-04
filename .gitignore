@@ -8,7 +8,6 @@ wheels/
 .chroma_sumco_300_3
 DB_TEST
 DB_TEST_22.7
-configs
 
 # Virtual environments
 .venv

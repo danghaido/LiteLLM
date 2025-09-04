@@ -1,6 +1,7 @@
 # tools/rag.py
-from Phoenix.trace.tracing import tracer
 from opentelemetry.trace import Status, StatusCode
+
+from phoenix_tools.trace.tracing import tracer
 from tools.retriever import retrieve_chunks
 
 PROMPT_TEMPLATE = """You are a careful assistant. Use the context below to support your answer.
@@ -40,4 +41,4 @@ def build_prompt(query: str, top_k: int = 5) -> str:
         except Exception as e:
             span.record_exception(e)
             span.set_status(Status(StatusCode.ERROR, str(e)))
-            raise
+            return None

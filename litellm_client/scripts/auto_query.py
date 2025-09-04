@@ -1,13 +1,14 @@
 from opentelemetry.trace import Status, StatusCode
-from Phoenix.trace.tracing import tracer 
+from phoenix_tools.trace.tracing import tracer
 
-from LiteLLM.lite import LiteLLMClient
-from LiteLLM.Response import ResponseInput
+from litellm_client.lite import LiteLLMClient
+from litellm_client.response import ResponseInput
 import phoenix as px
 import pandas as pd
 
 from tools.rag import build_prompt
-from LiteLLM.common import CONFIG
+from litellm_client.common import CONFIG
+
 
 def prepare_data():
     client = px.Client()
@@ -31,7 +32,7 @@ def prepare_data():
 
 
 if __name__ == "__main__":
-    client =  LiteLLMClient()
+    client = LiteLLMClient()
     queries_text = prepare_data()
 
     for idx, query in enumerate(queries_text, 1):

@@ -1,13 +1,13 @@
 import os
 from typing import List
 
-from Phoenix.trace.tracing import tracer
+from phoenix_tools.trace.tracing import tracer
 
 from litellm import completion
 from opentelemetry.trace import Status, StatusCode
 
-from LiteLLM.common import CONFIG
-from LiteLLM.Response import ResponseInput, ResponseOutput
+from litellm_client.common import CONFIG
+from litellm_client.response import ResponseInput, ResponseOutput
 
 os.environ[CONFIG.env_key] = CONFIG.api_key
 
@@ -39,7 +39,7 @@ class LiteLLMClient:
             except Exception as e:
                 span.record_exception(e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
-                raise
+                return None
 
         return ResponseOutput(response)
 
@@ -79,6 +79,6 @@ class LiteLLMClient:
                 except Exception as e:
                     span.record_exception(e)
                     span.set_status(Status(StatusCode.ERROR, str(e)))
-                    raise
+                    return None
 
         return results
