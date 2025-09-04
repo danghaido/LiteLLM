@@ -3,13 +3,14 @@ import uuid
 import gradio as gr
 from openinference.instrumentation import using_session
 from opentelemetry.trace import Status, StatusCode
-from Phoenix.trace.tracing import tracer
+from phoenix_tools.trace.tracing import tracer
 
-from LiteLLM.lite import LiteLLMClient
-from LiteLLM.Response import ResponseInput
+from litellm_client.lite import LiteLLMClient
+from litellm_client.response import ResponseInput
 from tools.rag import build_prompt
 
 client = LiteLLMClient()
+
 
 def respond(user_msg, history, request: gr.Request):
     # 1) Lấy session id ổn định cho tab hiện tại
@@ -33,6 +34,7 @@ def respond(user_msg, history, request: gr.Request):
                 span.record_exception(e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
                 return f"[ERROR] {e}"
+
 
 demo = gr.ChatInterface(
     fn=respond,

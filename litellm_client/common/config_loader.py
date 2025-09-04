@@ -5,14 +5,14 @@ from loguru import logger
 
 
 class DictToObject:
-    def __init__(self, dictionary):
+    def __init__(self, dictionary: dict) -> None:
         for key, value in dictionary.items():
             if isinstance(value, dict):
                 setattr(self, key, DictToObject(value))
             else:
                 setattr(self, key, value)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return str(self.__dict__)
 
 
@@ -22,7 +22,7 @@ class Config:
     def __init__(self) -> None:
         pass
 
-    def load_config(self, config_file):
+    def load_config(self, config_file: str) -> DictToObject | None:
         """Load the YAML configuration file and interpolate environment variables."""
         try:
             with open(config_file, "r") as file:
@@ -41,8 +41,6 @@ class Config:
             return None
 
 
-CONFIG_PATH = (
-    Path(__file__).resolve().parent.parent.parent / "configs" / "huggingface.yaml"
-)
+CONFIG_PATH = "configs/dev.yaml"
 
 CONFIG = Config().load_config(config_file=str(CONFIG_PATH))

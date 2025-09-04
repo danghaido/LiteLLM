@@ -1,20 +1,17 @@
 import os
 import json
 
-import litellm
+import litellm_client
 import pandas as pd
 import phoenix as px
 
-from LiteLLM.common import CONFIG
+from litellm_client.common import CONFIG
 from phoenix.trace.dsl import SpanQuery
 from phoenix.client import Client
 
 # Configuration constants
 PHOENIX_COLLECTOR_ENDPOINT = "http://localhost:6006"
 PROJECT_NAME = "hugging-face"
-
-# Enable debug mode for LiteLLM
-litellm._turn_on_debug()
 
 # Set environment variables
 os.environ["PHOENIX_COLLECTOR_ENDPOINT"] = PHOENIX_COLLECTOR_ENDPOINT

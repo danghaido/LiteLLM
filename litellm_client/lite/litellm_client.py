@@ -1,24 +1,21 @@
 import os
 from typing import List
 
-from Phoenix.trace.tracing import tracer
+from phoenix_tools.trace.tracing import tracer
 
 from litellm import completion
 from opentelemetry.trace import Status, StatusCode
 
-from LiteLLM.common import CONFIG
-from LiteLLM.Response import ResponseInput, ResponseOutput
+from litellm_client.common import CONFIG
+from litellm_client.response import ResponseInput, ResponseOutput
+
+os.environ[CONFIG.env_key] = CONFIG.api_key
 
 
 class LiteLLMClient:
-    def __init__(
-        self, model_name: str = None, api_key: str = None, temperature: float = 0.7
-    ):
+    def __init__(self, model_name: str = None, temperature: float = 0.7):
         self.model_name = model_name or CONFIG.model
-        self.api_key = api_key or CONFIG.api_key
         self.temperature = temperature or CONFIG.temperature
-
-        os.environ[CONFIG.env_key] = self.api_key
 
     def complete(self, query: List[ResponseInput], **kwargs) -> ResponseOutput:  # type: ignore
         message = [m.to_dict() for m in query]
@@ -42,7 +39,7 @@ class LiteLLMClient:
             except Exception as e:
                 span.record_exception(e)
                 span.set_status(Status(StatusCode.ERROR, str(e)))
-                raise
+                return None
 
         return ResponseOutput(response)
 
@@ -75,11 +72,13 @@ class LiteLLMClient:
                         results.append(out_obj)
                         outs_preview.append(out_obj.transform())
 
-                    span.set_attribute("output.value", "\n---\n".join(o[:400] for o in outs_preview))
+                    span.set_attribute(
+                        "output.value", "\n---\n".join(o[:400] for o in outs_preview)
+                    )
                     span.set_status(Status(StatusCode.OK))
                 except Exception as e:
                     span.record_exception(e)
                     span.set_status(Status(StatusCode.ERROR, str(e)))
-                    raise
+                    return None
 
         return results
