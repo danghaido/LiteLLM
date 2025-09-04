@@ -7,10 +7,10 @@ import chromadb
 from chonkie import ChromaHandshake, AutoEmbeddings
 from FlagEmbedding import FlagReranker
 
-from Phoenix.trace.tracing import tracer
+from phoenix_tools.trace.tracing import tracer
 from opentelemetry.trace import Status, StatusCode
 
-from LiteLLM.common import CONFIG 
+from litellm_client.common import CONFIG
 
 
 # ---------- singletons (init đúng 1 lần) ----------
@@ -28,7 +28,9 @@ def _bootstrap(
     client = chromadb.PersistentClient(path=path)
     names = [c.name for c in client.list_collections()]
     if collection_name not in names:
-        ChromaHandshake(client=client, collection_name=collection_name, embedding_model=embeddings)
+        ChromaHandshake(
+            client=client, collection_name=collection_name, embedding_model=embeddings
+        )
     collection = client.get_collection(collection_name)
 
     # reranker
@@ -50,9 +52,9 @@ def retrieve_chunks(query: str, top_k: int = 5, fetch_k: int = 50) -> List[str]:
                 n_results=fetch_k,
                 include=["documents", "metadatas"],
             )
-            docs: List[str]      = res["documents"][0]
-            metas: List[Dict]    = res["metadatas"][0]
-            ids:   List[str]     = res["ids"][0]
+            docs: List[str] = res["documents"][0]
+            metas: List[Dict] = res["metadatas"][0]
+            ids: List[str] = res["ids"][0]
 
             for i, (doc_id, text) in enumerate(zip(ids, docs)):
                 notification = f"Retrieved doc {i}: {doc_id} :: {text}"
@@ -61,19 +63,30 @@ def retrieve_chunks(query: str, top_k: int = 5, fetch_k: int = 50) -> List[str]:
             pairs = [[query, t] for t in docs]
             scores = reranker.compute_score(pairs, normalize=True)
 
-            ranked = sorted(zip(ids, docs, metas, scores), key=lambda x: x[3], reverse=True)
+            ranked = sorted(
+                zip(ids, docs, metas, scores), key=lambda x: x[3], reverse=True
+            )
             top = ranked[:top_k]
 
             for idx, (doc_id, text, meta, score) in enumerate(top):
-                span.set_attribute(f"retrieval.documents.{idx}.document.id", str(doc_id))
-                span.set_attribute(f"retrieval.documents.{idx}.document.score", float(score))
+                span.set_attribute(
+                    f"retrieval.documents.{idx}.document.id", str(doc_id)
+                )
+                span.set_attribute(
+                    f"retrieval.documents.{idx}.document.score", float(score)
+                )
                 span.set_attribute(f"retrieval.documents.{idx}.document.content", text)
                 if isinstance(meta, dict):
                     for k, v in meta.items():
                         if isinstance(v, (str, int, float, bool)) or v is None:
-                            span.set_attribute(f"retrieval.documents.{idx}.document.metadata.{k}", v)
+                            span.set_attribute(
+                                f"retrieval.documents.{idx}.document.metadata.{k}", v
+                            )
                         else:
-                            span.set_attribute(f"retrieval.documents.{idx}.document.metadata.{k}", json.dumps(v))
+                            span.set_attribute(
+                                f"retrieval.documents.{idx}.document.metadata.{k}",
+                                json.dumps(v),
+                            )
 
             span.set_attribute("retrieval.top_k", int(top_k))
 
@@ -83,4 +96,4 @@ def retrieve_chunks(query: str, top_k: int = 5, fetch_k: int = 50) -> List[str]:
         except Exception as e:
             span.record_exception(e)
             span.set_status(Status(StatusCode.ERROR, str(e)))
-            raise
+            return None
