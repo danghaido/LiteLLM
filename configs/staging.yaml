@@ -11,9 +11,9 @@ extra_env:
   HF_HUB_ENABLE_HF_TRANSFER: "1"
 
 eval_model:
-  model: huggingface/together/Qwen/Qwen2.5-7B-Instruct
+  model: gpt-4o-mini
   api_key: API_KEY
-  env: HUGGINGFACE_API_KEY
+  env: OPENAI_API_KEY
   temperature: 0.0
   concurrency: 20
 
