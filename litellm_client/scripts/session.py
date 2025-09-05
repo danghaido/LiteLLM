@@ -7,6 +7,7 @@ from phoenix_tools.trace.tracing import tracer
 
 from litellm_client.lite import LiteLLMClient
 from litellm_client.response import ResponseInput
+from tools.factory import user
 from tools.rag import build_prompt
 
 client = LiteLLMClient()
@@ -23,9 +24,9 @@ def respond(user_msg, history, request: gr.Request):
             span.set_attribute("input.value", user_msg)
             try:
                 prompt = build_prompt(user_msg, top_k=5)
-                msg = ResponseInput(prompt)
-                resp = client.complete([msg])
-                out = resp.transform()
+                msg: ResponseInput = user(prompt)
+                response = client.complete([msg])
+                out = response.get("content", "")
 
                 span.set_attribute("output.value", out)
                 span.set_status(Status(StatusCode.OK))
