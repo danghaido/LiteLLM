@@ -11,6 +11,8 @@ from litellm_client.response import ResponseInput, ResponseOutput
 
 os.environ[CONFIG.env_key] = CONFIG.api_key
 
+os.environ[CONFIG.env_key] = CONFIG.api_key
+
 
 class LiteLLMClient:
     def __init__(self, model_name: str = None, temperature: float = 0.7):
