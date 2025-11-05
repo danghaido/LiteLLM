@@ -43,13 +43,12 @@ if __name__ == "__main__":
             try:
                 prompt = build_prompt(query, top_k=CONFIG.retrieve.top_k)
 
-                msg = ResponseInput(prompt)
+                msg: ResponseInput = user(prompt)
                 response = client.complete([msg])
 
-                out = response.transform()
+                out = response.get("content", "")
                 print(f"\n=== Q{idx}: {query}")
-                print("Answer:", out)
-                print("Usage:", response.usage())
+                print(f"Answer from LLM: {out}")
 
                 span.set_attribute("output.value", out[:400])
                 span.set_status(Status(StatusCode.OK))

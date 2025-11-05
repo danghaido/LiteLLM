@@ -6,6 +6,7 @@ from litellm_client.response import ResponseInput
 from tools.rag import build_prompt
 
 from litellm_client.common import CONFIG
+from tools.factory import user, system, assistant
 
 if __name__ == "__main__":
     client = LiteLLMClient()
@@ -26,12 +27,11 @@ if __name__ == "__main__":
                 try:
                     prompt = build_prompt(query, top_k=CONFIG.retrieve.top_k)
 
-                    msg = ResponseInput(prompt)
+                    msg: ResponseInput = user(prompt)
                     response = client.complete([msg])
 
-                    out = response.transform()
+                    out = response.get("content", "")
                     print(f"Answer from LLM: {out}")
-                    print(response.usage())
 
                     span.set_attribute("output.value", out)
                     span.set_status(Status(StatusCode.OK))

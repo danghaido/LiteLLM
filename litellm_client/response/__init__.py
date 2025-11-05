@@ -1,4 +1,3 @@
-from .response_input import ResponseInput
-from .response_output import ResponseOutput
+from .message import ResponseInput, ResponseOutput
 
-__all__ = ["response_input", "response_output"]
+__all__ = ["ResponseInput", "ResponseOutput"]

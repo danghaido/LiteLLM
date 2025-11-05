@@ -1,7 +1,13 @@
+import os
+from dotenv import load_dotenv
+
 from pathlib import Path
 
 import yaml
 from loguru import logger
+
+load_dotenv()
+env = os.getenv("APP_ENV", "dev")
 
 
 class DictToObject:
@@ -41,6 +47,6 @@ class Config:
             return None
 
 
-CONFIG_PATH = "configs/dev.yaml"
+CONFIG_PATH = f"configs/{env}.yaml"
 
 CONFIG = Config().load_config(config_file=str(CONFIG_PATH))
