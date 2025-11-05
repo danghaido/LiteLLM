@@ -16,7 +16,7 @@ B3: uv sync
 
 - Open terminal
 
-- cd EvaluateLLM/Phoenix/ci
+- cd phoenix_tools/ci
 
 - docker compose up (Windows)
 
