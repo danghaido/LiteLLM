@@ -1,7 +1,7 @@
 # docker-compose.yml
 services:
   phoenix:
-    image: arizephoenix/phoenix:latest # Must be greater than 4.0 version to work
+    image: arizephoenix/phoenix:commit-260d3a9
     ports:
       - 6006:6006 # PHOENIX_PORT
       - 4317:4317 # PHOENIX_GRPC_PORT

@@ -1,13 +1,12 @@
+import pandas as pd
+import phoenix as px
 from opentelemetry.trace import Status, StatusCode
-from phoenix_tools.trace.tracing import tracer
 
+from litellm_client.common import CONFIG
 from litellm_client.lite import LiteLLMClient
 from litellm_client.response import ResponseInput
-import phoenix as px
-import pandas as pd
-
+from phoenix_tools.trace.tracing import tracer
 from tools.rag import build_prompt
-from litellm_client.common import CONFIG
 
 
 def prepare_data():

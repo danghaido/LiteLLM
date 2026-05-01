@@ -1,32 +1,75 @@
-# Khởi tạo môi trường (Sử dụng uv)
+# LiteLLM Project
 
+## Giới thiệu
+
+Đây là project LiteLLM phục vụ truy vấn, đánh giá và theo dõi (tracing) cho các bài toán RAG/LLM.
+Project có tích hợp Arize Phoenix để quan sát trace và đánh giá kết quả trong quá trình chạy.
+
+## Hướng dẫn chạy
+
+### B1: Chạy Phoenix bằng Docker Compose
+
+Mở terminal và chạy lệnh trong thư mục `phoenix_tools/ci`:
+
+```bash
+cd phoenix_tools/ci
+docker compose up
+```
+
+Sau khi chạy thành công, truy cập: http://localhost:6006/
+
+### B2: Chạy script theo hệ điều hành
+
+- Ubuntu/Linux: dùng script trong thư mục `run_scripts`
+- Windows: dùng script trong thư mục `run_scripts_WIN`
+
+Ví dụ:
+
+```bash
+# Ubuntu/Linux
+./run_scripts/query.sh
+
+# Windows (PowerShell hoặc CMD)
+run_scripts_WIN\query.bat
+```
+
+## Khởi tạo môi trường (uv)
+
+```bash
 pip install uv
-
-B1: uv venv
-
-B2: source .venv/bin/activate
-
-B3: uv sync
-
-# Arize phoenix
-
-## Run Phoenix locally using Docker.
-
-### Steps
-
-- Open terminal
-
-- cd EvaluateLLM/Phoenix/ci
-
-- docker compose up (Windows)
-
-- sudo docker compose up (Linux)
-
-- Then open: http://localhost:6006/
+uv venv
+source .venv/bin/activate
+uv sync
+```
 
 # Configs
 
-Project parameters can be changed via huggingface.yaml
+Project parameters can be changed via dev.yaml
+
+## Env-driven YAML
+
+Config loader now supports placeholders in YAML:
+
+- `${ENV_NAME}`: read from environment variable, fallback to empty string if missing.
+- `${ENV_NAME:default_value}`: read from environment variable, fallback to `default_value`.
+
+You can define an optional `env` block in config file. All values inside `env` will be loaded into runtime environment before app logic starts.
+
+Example:
+
+```yaml
+env:
+	HUGGINGFACE_API_KEY: ${HUGGINGFACE_API_KEY:API_KEY}
+	OPENAI_API_KEY: ${OPENAI_API_KEY:API_KEY}
+
+env_key: HUGGINGFACE_API_KEY
+api_key: ${HUGGINGFACE_API_KEY:API_KEY}
+```
+
+Switch config file by environment:
+
+- `APP_ENV=dev` -> load `configs/dev.yaml`
+- `APP_ENV=staging` -> load `configs/staging.yaml`
 
 ## API Key
 
@@ -34,17 +77,16 @@ Project parameters can be changed via huggingface.yaml
 
 Create an API key with “Make Calls” permission to use Inference Providers.
 
-### OpenAI, Gemini
-
-Paid keys are required for successful runs.
-
 ## Retrieve
 
 Configure locations/models for:
 
 - Database path
-
-- Embedding model
+- Embedding model (`retrieve.type: local`)
+- Cloud embedding (`retrieve.type: cloud`) with:
+	- `retrieve.cloud.api_key`
+	- `retrieve.cloud.base_url`
+	- `retrieve.cloud.model_name`
 
 - Reranker model
 
@@ -53,6 +95,7 @@ Configure locations/models for:
 (Manage these in your config as appropriate for your project.)
 
 # Run scripts
+
 
 ## Make scripts executable:
 

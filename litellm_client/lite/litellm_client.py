@@ -13,12 +13,10 @@ from tools.factory import assistant
 
 os.environ[CONFIG.env_key] = CONFIG.api_key
 
-os.environ[CONFIG.env_key] = CONFIG.api_key
-
-
 class LiteLLMClient:
     def __init__(self, model_name: str = None, temperature: float = 0.7):
         self.model_name = model_name or CONFIG.model
+        self.url_base = CONFIG.url_base
         self.temperature = temperature or CONFIG.temperature
 
     def complete(self, message: List[ResponseInput], **kwargs) -> ResponseOutput:  # type: ignore

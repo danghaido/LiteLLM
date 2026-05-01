@@ -1,16 +1,14 @@
 import json
-import os
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 
 import pandas as pd
 from loguru import logger
-from phoenix.evals import LiteLLMModel, RelevanceEvaluator, run_evals
+from phoenix.evals import RelevanceEvaluator, run_evals
 from phoenix.session.client import Client
 from phoenix.trace import DocumentEvaluations
 from phoenix.trace.dsl import SpanQuery
 
-import litellm_client
 from litellm_client.common import CONFIG
 from phoenix_tools.models.openai_model import OpenAIModel
 
@@ -137,9 +135,7 @@ class RAGEvaluator:
         docs = pd.json_normalize(df_exploded["retrieval.documents"])
 
         # Combine with trace information
-        retrieved_documents_df = pd.concat(
-            [df_exploded.drop(columns=["retrieval.documents"]), docs], axis=1
-        )
+        retrieved_documents_df = pd.concat([df_exploded.drop(columns=["retrieval.documents"]), docs], axis=1)
 
         # Rename columns for evaluation
         retrieved_documents_df = retrieved_documents_df.rename(
@@ -169,9 +165,7 @@ class RAGEvaluator:
 
         return retrieved_documents_relevance_df
 
-    def prepare_final_dataframe(
-        self, documents_df: pd.DataFrame, relevance_df: pd.DataFrame
-    ) -> pd.DataFrame:
+    def prepare_final_dataframe(self, documents_df: pd.DataFrame, relevance_df: pd.DataFrame) -> pd.DataFrame:
         """
         Prepare the final DataFrame with proper indexing for Phoenix logging.
 
@@ -183,29 +177,21 @@ class RAGEvaluator:
             Final DataFrame ready for logging
         """
         # Combine documents with relevance evaluations
-        documents_with_relevance_df = pd.concat(
-            [documents_df, relevance_df.add_prefix("eval_")], axis=1
-        )
+        documents_with_relevance_df = pd.concat([documents_df, relevance_df.add_prefix("eval_")], axis=1)
 
         final_df = documents_with_relevance_df.copy()
 
         # Convert score to numeric, handle errors as NaN
-        final_df["__score__"] = pd.to_numeric(
-            final_df["document.score"], errors="coerce"
-        )
+        final_df["__score__"] = pd.to_numeric(final_df["document.score"], errors="coerce")
 
         # Sort by span_id and score (descending); NaN values go to end of group
-        final_df = final_df.sort_values(
-            ["context.span_id", "__score__"], ascending=[True, False]
-        )
+        final_df = final_df.sort_values(["context.span_id", "__score__"], ascending=[True, False])
 
         # Add document position within each span
         final_df["document_position"] = final_df.groupby("context.span_id").cumcount()
 
         # Create MultiIndex as required by Phoenix
-        final_df = final_df.set_index(["context.span_id", "document_position"]).drop(
-            columns="__score__"
-        )
+        final_df = final_df.set_index(["context.span_id", "document_position"]).drop(columns="__score__")
         final_df = final_df.rename(
             columns={
                 "eval_label": "label",
@@ -215,9 +201,7 @@ class RAGEvaluator:
         )
         return final_df
 
-    def log_evaluations(
-        self, final_df: pd.DataFrame, eval_name: str = "relevance"
-    ) -> None:
+    def log_evaluations(self, final_df: pd.DataFrame, eval_name: str = "relevance") -> None:
         self.client.log_evaluations(
             DocumentEvaluations(eval_name=eval_name, dataframe=final_df),
         )
